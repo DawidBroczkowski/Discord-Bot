@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiscordBot.Migrations
 {
     [DbContext(typeof(BotContext))]
-    [Migration("20220925090740_AutoRole")]
-    partial class AutoRole
+    [Migration("20230422212652_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -91,6 +91,9 @@ namespace DiscordBot.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("AutoRoleId")
+                        .HasColumnType("decimal(20,0)");
+
+                    b.Property<decimal?>("ConfirmRoleId")
                         .HasColumnType("decimal(20,0)");
 
                     b.Property<int>("MusicBotVoteTreshold")

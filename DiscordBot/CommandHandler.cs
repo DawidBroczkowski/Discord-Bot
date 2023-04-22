@@ -27,6 +27,7 @@ namespace DiscordBot
         private readonly LavaNode _lavaNode;
         private InteractionService _interactionService;
         private BotContext _botContext;
+        private IServerConfigRepository _serverConfigRepository;
 
         public CommandHandler(DiscordSocketClient client)
         {
@@ -50,6 +51,7 @@ namespace DiscordBot
             _interactionService = new InteractionService(_client, cfg);
 
             _configRepository.LoadConfig();
+            _serverConfigRepository = _serviceProvider.GetRequiredService<IServerConfigRepository>();   
         }
 
         public async Task InstallCommandsAsync()
@@ -62,7 +64,7 @@ namespace DiscordBot
             _client.SlashCommandExecuted += HandleSlashCommandAsync;
             _interactionService.SlashCommandExecuted += SlashCommandExecuted;
             _client.Log += Log;
-            _client.JoinedGuild += ConfigureDatabase;
+            _client.JoinedGuild += ConfigureDatabaseAsync;
             _client.SelectMenuExecuted += HandleMenuAsync;
             _client.ButtonExecuted += HandleButtonAsync;
             _client.UserJoined += OnUserJoinedAsync;
@@ -118,6 +120,14 @@ namespace DiscordBot
                 await _lavaNode.ConnectAsync();
             }
 
+            foreach (var guild in _client.Guilds.ToList())
+            {
+                if (await _serverConfigRepository!.GetConfigAsync(guild.Id) is null)
+                {
+                    await ConfigureDatabaseAsync(guild);
+                }
+            }
+
             //await _interactionService.RestClient.DeleteAllGlobalCommandsAsync();
             await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
             await _interactionService.RegisterCommandsGloballyAsync();
@@ -160,8 +170,9 @@ namespace DiscordBot
             return Task.CompletedTask;
         }
 
-        private async Task ConfigureDatabase(IGuild guild)
-        {   
+        private async Task ConfigureDatabaseAsync(IGuild guild)
+        {
+
             ServerConfig config = new()
             {
                 ServerId = guild.Id,
@@ -169,7 +180,7 @@ namespace DiscordBot
                 Permissions = new()
             };
 
-            foreach (var command in (DataAccess.Enums.Commands[]) Enum.GetValues(typeof(DataAccess.Enums.Commands)))
+            foreach (var command in (DataAccess.Enums.Commands[])Enum.GetValues(typeof(DataAccess.Enums.Commands)))
             {
                 Permission permission = new()
                 {

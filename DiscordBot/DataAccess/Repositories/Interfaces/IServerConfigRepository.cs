@@ -9,7 +9,7 @@ namespace DiscordBot.DataAccess.Repositories.Interfaces
         Task AddSelfRoleAsync(ulong serverId, ulong roleId);
         Task<List<Role>> GetAllowedRolesAsync(ulong serverId, Enums.Commands command);
         Task<GuildPermission> GetCommandPermissionAsync(ulong serverId, Enums.Commands command);
-        Task<ServerConfig> GetConfigAsync(ulong serverId);
+        Task<ServerConfig?>? GetConfigAsync(ulong serverId);
         Task<ulong?> GetConfirmRoleIdAsync(ulong serverId);
         Task<ushort> GetMusicBotVoteTresholdAsync(ulong serverId);
         Task<List<SelfRole>> GetSelfRolesAsync(ulong serverId);

@@ -19,11 +19,11 @@ namespace DiscordBot.DataAccess.Repositories
             await _botContext.SaveChangesAsync();
         }
 
-        public async Task<ServerConfig> GetConfigAsync(ulong serverId)
+        public async Task<ServerConfig?>? GetConfigAsync(ulong serverId)
         {
             var config = await _botContext.ServerConfigs
                 .IgnoreAutoIncludes()
-                .FirstAsync(x => x.ServerId == serverId);
+                .FirstOrDefaultAsync(x => x.ServerId == serverId);
             return config;
         }
 
