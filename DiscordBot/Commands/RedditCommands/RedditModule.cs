@@ -17,7 +17,7 @@ namespace DiscordBot.Commands.RedditCommands
 
         [CheckPermission(DataAccess.Enums.Commands.reddit)]
         [SlashCommand("reddit", "Gets the top post from a subreddit in a given sort mode")]
-        public async Task GetRedditPost([Summary(description: "Subreddit")]string subreddit, 
+        public async Task GetRedditPostAsync([Summary(description: "Subreddit")]string subreddit, 
             [Summary(description: "Sort mode")]RedditSort sort, 
             [Summary(description: "Time mode")]RedditTime time)
         {
@@ -27,7 +27,7 @@ namespace DiscordBot.Commands.RedditCommands
 
         [CheckPermission(DataAccess.Enums.Commands.redditrandom)]
         [SlashCommand("redditrandom", "Gets a random post from the top 30 posts in a given sort mode")]
-        public async Task GetRandomRedditPost([Summary(description: "Subreddit")] string subreddit,
+        public async Task GetRandomRedditPostAsync([Summary(description: "Subreddit")] string subreddit,
             [Summary(description: "Sort mode")] RedditRandomSort sort,
             [Summary(description: "Time mode")] RedditTime time)
         {
@@ -37,7 +37,7 @@ namespace DiscordBot.Commands.RedditCommands
 
         [CheckPermission(DataAccess.Enums.Commands.redditbest)]
         [SlashCommand("redditbest", "Gets a random post from the top 30 posts in Best sort mode")]
-        public async Task GetBestRedditPost([Summary(description: "Subreddit")] string subreddit)
+        public async Task GetBestRedditPostAsync([Summary(description: "Subreddit")] string subreddit)
         {
             Configure();
             await _redditService.SendBestRedditPostAsync(subreddit, false);

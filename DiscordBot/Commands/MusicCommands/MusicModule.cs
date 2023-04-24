@@ -1,11 +1,9 @@
-﻿using System.Text;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 using Victoria.Responses.Search;
 using Victoria.Enums;
-using DiscordBot.Services;
 using Discord.Interactions;
 using DiscordBot.GlobalServices.Interfaces;
 using DiscordBot.Commands.MusicCommands.Interfaces;
@@ -634,7 +632,7 @@ namespace DiscordBot.Commands.M
         
         [CheckPermission(DataAccess.Enums.Commands.queue)]
         [SlashCommand("queue", "Responds with all tracks currently in queue")]
-        public async Task Queue()
+        public async Task QueueAsync()
         {
             _embedService = _serviceProvider.GetRequiredService<IEmbedService>();
             _embedService.SetContext(Context);
