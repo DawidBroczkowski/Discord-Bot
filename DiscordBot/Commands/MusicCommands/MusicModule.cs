@@ -9,8 +9,11 @@ using DiscordBot.GlobalServices.Interfaces;
 using DiscordBot.Commands.MusicCommands.Interfaces;
 using DiscordBot.DataAccess.Repositories.Interfaces;
 
+
+
 // TODO:
-// Refactor everything, might not even work
+// Refactor everything
+// Stopped working, need to try newer lavalink
 
 namespace DiscordBot.Commands.M
 {
@@ -224,7 +227,6 @@ namespace DiscordBot.Commands.M
                 x.Track = lavaTrack;
                 x.ShouldPause = false;
             });
-
         }
 
         [CheckPermission(DataAccess.Enums.Commands.forceplay)]

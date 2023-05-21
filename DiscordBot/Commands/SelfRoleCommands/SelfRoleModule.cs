@@ -46,7 +46,7 @@ namespace DiscordBot.Commands.SelfRoleCommands
             await _selfRoleService.RemoveSelfRoleAsync(role);
         }
 
-        public void Configure()
+        private void Configure()
         {
             _selfRoleService.SetContext(Context);
             _selfRoleService.SetServiceProvider(_serviceProvider);
