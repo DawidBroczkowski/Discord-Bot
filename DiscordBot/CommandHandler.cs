@@ -14,6 +14,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Victoria;
+using Microsoft.AspNetCore.SignalR.Client;
+using static System.Net.Mime.MediaTypeNames;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Data.Common;
+using DiscordBot.Commands.WeatherCommands.Helpers;
 
 namespace DiscordBot
 {
@@ -28,6 +33,7 @@ namespace DiscordBot
         private InteractionService _interactionService;
         private BotContext _botContext;
         private IServerConfigRepository _serverConfigRepository;
+        private HubConnection _connection;
 
         public CommandHandler(DiscordSocketClient client)
         {
@@ -51,13 +57,17 @@ namespace DiscordBot
             _interactionService = new InteractionService(_client, cfg);
 
             _configRepository.LoadConfig();
-            _serverConfigRepository = _serviceProvider.GetRequiredService<IServerConfigRepository>();   
+            _serverConfigRepository = _serviceProvider.GetRequiredService<IServerConfigRepository>();
+
+            _connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7029/chatHub")
+            .WithAutomaticReconnect()
+            .Build();
+            _connection.StartAsync();
         }
 
         public async Task InstallCommandsAsync()
         {
-            
-
             // Hook the MessageReceived event into our command handler
             _client.Ready += OnReadyAsync;
             //_client.MessageReceived += HandleCommandAsync;
@@ -77,7 +87,20 @@ namespace DiscordBot
 
         private async Task HandleSlashCommandAsync(SocketSlashCommand command)
         {
-            await command.DeferAsync(); 
+            await command.DeferAsync();
+            List<string?> commandOptions = command.Data.Options.Select(x => (x.Value is not null) ? x.Value.ToString() : x.Name.ToString()).ToList();
+            string guildName = _client.Guilds.First(x => x.Id == command.GuildId).Name.ToString();
+            string? guildAvatar = _client.Guilds.FirstOrDefault (x => x.Id == command.GuildId)?.IconUrl?.ToString();
+            string commandText = string.Join(" ", commandOptions);
+            
+            try
+            {
+                await _connection.InvokeAsync("SendServerMessage", guildName, guildAvatar, command.User.Username, $"/{command.Data.Name} {commandText}", _client.Guilds.First(x => x.Id == command.GuildId).Id.ToString());
+            }
+            catch (Exception ex)
+            {
+                //await _connection.InvokeAsync("SendMessage", "system", ex.Message);
+            }
         }
 
         private async Task SlashCommandExecuted(SlashCommandInfo arg1, Discord.IInteractionContext arg2, IResult arg3)
@@ -130,7 +153,7 @@ namespace DiscordBot
 
             //await _interactionService.RestClient.DeleteAllGlobalCommandsAsync();
             await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
-            await _interactionService.RegisterCommandsGloballyAsync();
+            //await _interactionService.RegisterCommandsGloballyAsync();
             
             _client.InteractionCreated += async interaction =>
             {
@@ -140,7 +163,7 @@ namespace DiscordBot
         }
 
         private ServiceProvider ConfigureServices()
-        {
+        {        
             return new ServiceCollection()
              .AddSingleton<DiscordSocketClient>()
              .AddSingleton<IConfigRepository, JsonConfigRepository>()
@@ -150,6 +173,7 @@ namespace DiscordBot
              .AddTransient<IServerConfigRepository, ServerConfigRepository>()
              .AddTransient<IButtonService, ButtonService>()
              .AddTransient<IMenuService, MenuService>()
+             .AddSingleton<ZipCodeRepository>(new ZipCodeRepository())
              .AddLavaNode(x => 
              {
                  x.SelfDeaf = true;
@@ -233,7 +257,6 @@ namespace DiscordBot
                     await buttonService.ConfirmRoleButtonAsync();
                     break;
             }
-            await arg.ModifyOriginalResponseAsync(x => x.Content = "Success");
         }
 
         private async Task OnUserJoinedAsync(SocketGuildUser user)

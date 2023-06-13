@@ -4,6 +4,7 @@ using DiscordBot.Commands.AutoRoleCommands.Interfaces;
 using DiscordBot.DataAccess.Repositories.Interfaces;
 using DiscordBot.GlobalServices.Interfaces;
 using DiscordBot.Services;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot.Commands.AutoRoleCommands

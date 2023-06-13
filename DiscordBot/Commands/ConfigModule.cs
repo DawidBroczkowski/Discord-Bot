@@ -3,6 +3,8 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DiscordBot.DataAccess.Repositories.Interfaces;
 using DiscordBot.GlobalServices.Interfaces;
+using DiscordBot.Services;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot.Commands
@@ -26,8 +28,7 @@ namespace DiscordBot.Commands
             [Summary(description: "Command you want to set the permission of.")] DataAccess.Enums.Commands command,
             [Summary(description: "The permission (Case sensitive, use \"/permission get\" to get a list of permissions).")]DataAccess.Enums.Permissions permission)
         {
-            _embedService = _serviceProvider.GetRequiredService<IEmbedService>();
-            _embedService.SetContext(Context);
+            Config();
             try
             {
                 await _serverConfig.SetPermissionAsync(Context.Guild.Id, command, (GuildPermission)permission);
@@ -46,8 +47,7 @@ namespace DiscordBot.Commands
             [Summary(description: "Command you want to add the permission to.")] DataAccess.Enums.Commands command,
             [Summary(description: "The role.")] SocketRole role)
         {
-            _embedService = _serviceProvider.GetRequiredService<IEmbedService>();
-            _embedService.SetContext(Context);
+            Config();
             try
             {
                 await _serverConfig.AddPermissionRoleAsync(Context.Guild.Id, command, role.Id);
@@ -66,8 +66,7 @@ namespace DiscordBot.Commands
             [Summary(description: "Command you want to remove the permission from.")] DataAccess.Enums.Commands command,
             [Summary(description: "The role.")] SocketRole role)
         {
-            _embedService = _serviceProvider.GetRequiredService<IEmbedService>();
-            _embedService.SetContext(Context);
+            Config();
             try
             {
                 await _serverConfig.RemovePermissionRoleAsync(Context.Guild.Id, command, role.Id);
@@ -94,6 +93,12 @@ namespace DiscordBot.Commands
             reply += "```";
 
             await Context.Interaction.ModifyOriginalResponseAsync(x => x.Content = reply);
+        }
+
+        private void Config()
+        {
+            _embedService = _serviceProvider.GetRequiredService<IEmbedService>();
+            _embedService.SetContext(Context);
         }
     }
 }

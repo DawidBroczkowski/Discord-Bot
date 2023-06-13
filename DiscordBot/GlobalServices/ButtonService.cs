@@ -1,6 +1,7 @@
 ﻿using Discord.WebSocket;
 using DiscordBot.DataAccess.Repositories.Interfaces;
 using DiscordBot.GlobalServices.Interfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot.GlobalServices
@@ -11,6 +12,7 @@ namespace DiscordBot.GlobalServices
         private DiscordSocketClient? _client;
         private IServiceProvider? _services;
         private IServerConfigRepository? _serverConfig;
+        private HubConnection? _connection;
 
         public void Configure(IServiceProvider services, SocketMessageComponent arg, DiscordSocketClient client)
         {
@@ -18,6 +20,12 @@ namespace DiscordBot.GlobalServices
             _client = client;
             _services = services;
             _serverConfig = _services.GetRequiredService<IServerConfigRepository>();
+
+            _connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7029/chatHub")
+            .WithAutomaticReconnect()
+            .Build();
+            _connection.StartAsync();
         }
 
         public async Task ConfirmRoleButtonAsync()
@@ -28,14 +36,18 @@ namespace DiscordBot.GlobalServices
             var roleId = await _serverConfig!.GetConfirmRoleIdAsync(guildId);
             if (roleId is null)
             {
+                await _arg.ModifyOriginalResponseAsync(x => x.Content = "Confirm-role has been turned off");
                 return;
             }
 
             var role = guild.Roles.FirstOrDefault(x => x.Id == roleId);
-            if (role is not null)
+            if (role is null)
             {
-                await user.AddRoleAsync(role);
+                await _arg.ModifyOriginalResponseAsync(x => x.Content = "Role no longer exists");
+                return;
             }
+            await user.AddRoleAsync(role);
+            await _arg.ModifyOriginalResponseAsync(x => x.Content = "Success");
         }
     }
 }

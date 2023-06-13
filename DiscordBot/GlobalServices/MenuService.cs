@@ -1,5 +1,6 @@
 ﻿using Discord.WebSocket;
 using DiscordBot.GlobalServices.Interfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace DiscordBot.GlobalServices
 {
@@ -7,11 +8,17 @@ namespace DiscordBot.GlobalServices
     {
         private SocketMessageComponent? _arg;
         private DiscordSocketClient? _client;
+        private HubConnection _connection;
 
         public void Configure(SocketMessageComponent arg, DiscordSocketClient client)
         {
             _arg = arg;
             _client = client;
+            _connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7029/chatHub")
+            .WithAutomaticReconnect()
+            .Build();
+            _connection.StartAsync();
         }
 
         public async Task SelfRoleAddSelectionMenuAsync()
@@ -24,6 +31,11 @@ namespace DiscordBot.GlobalServices
             if (role is not null)
             {
                 await user.AddRoleAsync(role);
+                try
+                {
+                    await _connection.InvokeAsync("selfrole add", "Bot", $"Success: {role.Name} marked as a self-role", guildId.ToString());
+                }
+                catch { }
             }
         }
 
@@ -37,6 +49,11 @@ namespace DiscordBot.GlobalServices
             if (role is not null)
             {
                 await user.RemoveRoleAsync(role);
+                try
+                {
+                    await _connection.InvokeAsync("selfrole remove", "Bot", $"Success: {role.Name} unmarked as a self-role", guildId.ToString());
+                }
+                catch { }
             }
         }
     }

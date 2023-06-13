@@ -5,6 +5,9 @@ using DiscordBot.Commands.ImgurCommand.Models;
 using DiscordBot.Commands.JokeCommands.Models;
 using DiscordBot.Commands.RedditCommands.Models;
 using DiscordBot.GlobalServices.Interfaces;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using System.Text.Json.Nodes;
 
 namespace DiscordBot.Services
@@ -13,6 +16,16 @@ namespace DiscordBot.Services
     {
         private SocketCommandContext? _commandContext;
         private SocketInteractionContext? _interactionContext;
+        private HubConnection _connection;
+
+        public EmbedService()
+        {
+            _connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7029/chatHub")
+            .WithAutomaticReconnect()
+            .Build();
+            _connection.StartAsync();
+        }
 
         public void SetContext(SocketInteractionContext interactionContext)
         {
@@ -22,32 +35,6 @@ namespace DiscordBot.Services
         public void SetContext(SocketCommandContext commandContext)
         {
             _commandContext = commandContext;
-        }
-
-        public async Task ReplyCommandErrorAsync(string command, string description)
-        {
-            var embed = new EmbedBuilder()
-            {
-                Title = $"Error:  {command}",
-                Description = description,
-                Color = Color.DarkRed
-            }.WithCurrentTimestamp()
-            .WithFooter(x => x.WithText($"{_commandContext!.Message.Author.ToString()}"));
-
-            await _commandContext!.Channel.SendMessageAsync(embed: embed.Build());
-        }
-
-        public async Task ReplyCommandSuccessAsync(string command, string description)
-        {
-            var embed = new EmbedBuilder()
-            {
-                Title = $"Success:  {command}",
-                Description = description,
-                Color = Color.DarkGreen
-            }.WithCurrentTimestamp()
-            .WithFooter(x => x.WithText($"{_commandContext!.Message.Author.ToString()}"));
-
-            await _commandContext!.Channel.SendMessageAsync(embed: embed.Build());
         }
 
         public async Task ReplyErrorAsync(string command, string description)
@@ -60,7 +47,13 @@ namespace DiscordBot.Services
             }.WithCurrentTimestamp()
             .WithFooter(x => x.WithText($"{_interactionContext!.Interaction.User.Username}"));
 
+            
             await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Error: {description}", _interactionContext.Guild.Id.ToString());
+            }
+            catch{}
         }
 
         public async Task ReplySuccessAsync(string command, string description)
@@ -72,7 +65,13 @@ namespace DiscordBot.Services
                 Color = Color.DarkGreen
             }.WithCurrentTimestamp()
             .WithFooter(x => x.WithText($"{_interactionContext!.Interaction.User.Username}"));
+        
             await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {description}", _interactionContext.Guild.Id.ToString());
+            }
+            catch { }
         }
 
         public async Task SendInfoEmbedAsync(string info, ITextChannel channel)
@@ -82,8 +81,13 @@ namespace DiscordBot.Services
                 Title = info,
                 Color = Color.Gold
             }.WithCurrentTimestamp();
-
+ 
             await channel.SendMessageAsync(embed: embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {info}", _interactionContext.Guild.Id.ToString());
+            }
+            catch { }
         }
 
         public async Task SendImgurImageAsync(ImagesData data, string content)
@@ -103,7 +107,13 @@ namespace DiscordBot.Services
             .WithAuthor(author => author.WithName(data.account_url)
             .WithUrl(authorUrl)).WithUrl(postUrl);
 
-            await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+            await _interactionContext!.Interaction.DeleteOriginalResponseAsync();
+            await _interactionContext!.Interaction.Channel.SendMessageAsync(embed: embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {content}", _interactionContext.Guild.Id.ToString());
+            }
+            catch { }
         }
 
         public async Task SendRedditPostAsync(PostModel post)
@@ -129,6 +139,11 @@ namespace DiscordBot.Services
             }
 
             await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {post.Title} - {post.Link}", _interactionContext.Guild.Id.ToString());
+            }
+            catch { }
         }
 
         public async Task SendCurrentWeatherDataAsync(JsonNode forecastNode)
@@ -144,6 +159,11 @@ namespace DiscordBot.Services
             .WithCurrentTimestamp();
 
             await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+            try
+            {
+                await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {forecastNode!["name"]!}, {forecastNode!["sys"]!["country"]!}", _interactionContext.Guild.Id.ToString());
+            }
+            catch { }
         }
 
         public async Task SendJokeAsync(JokeModel joke)
@@ -157,8 +177,12 @@ namespace DiscordBot.Services
                     Description = $"{joke.setup}\n\n{joke.delivery}"
                 }.WithFooter(footer => footer.Text = "JokeAPI")
                 .WithCurrentTimestamp();
-
                 await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+                try
+                {
+                    await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {joke.setup} - {joke.delivery}", _interactionContext.Guild.Id.ToString());
+                }
+                catch { }
             }
             else
             {
@@ -169,6 +193,11 @@ namespace DiscordBot.Services
                 }.WithFooter(footer => footer.Text = "JokeAPI")
                 .WithCurrentTimestamp();
                 await _interactionContext!.Interaction.ModifyOriginalResponseAsync(x => x.Embed = embed.Build());
+                try
+                {
+                    await _connection.InvokeAsync("SendMessage", "Bot", $"Success: {joke.joke}", _interactionContext.Guild.Id.ToString());
+                }
+                catch { }
             }
         }
 
